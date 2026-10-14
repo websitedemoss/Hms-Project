@@ -44,8 +44,8 @@ class SettingsScreen extends StatelessWidget {
                     const ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(Icons.dns, color: AppColors.secondary),
-                      title: Text('Backend API URL'),
-                      subtitle: Text('http://localhost:3000/api/v1 (NestJS + Prisma)'),
+                      title: Text('Backend API URL (Railway)'),
+                      subtitle: Text('https://hms-project-production-8bd9.up.railway.app/api/v1'),
                       trailing: Chip(
                         label: Text('Online', style: TextStyle(color: AppColors.success, fontWeight: FontWeight.bold, fontSize: 11)),
                         backgroundColor: AppColors.successLight,
@@ -55,8 +55,8 @@ class SettingsScreen extends StatelessWidget {
                     const ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(Icons.storage, color: AppColors.info),
-                      title: Text('Database Engine'),
-                      subtitle: Text('PostgreSQL 18 (hospital_db) on localhost:5432'),
+                      title: Text('Database Engine (Supabase)'),
+                      subtitle: Text('PostgreSQL 15 (AWS Sydney • Pooler + RLS Active)'),
                       trailing: Text('Connected', style: TextStyle(color: AppColors.success, fontWeight: FontWeight.bold)),
                     ),
                     const Divider(),
