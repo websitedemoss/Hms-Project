@@ -5,10 +5,17 @@ import '../theme/app_colors.dart';
 import 'responsive_helper.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 
-class AdaptiveShell extends ConsumerWidget {
+class AdaptiveShell extends ConsumerStatefulWidget {
   final Widget child;
 
   const AdaptiveShell({super.key, required this.child});
+
+  @override
+  ConsumerState<AdaptiveShell> createState() => _AdaptiveShellState();
+}
+
+class _AdaptiveShellState extends ConsumerState<AdaptiveShell> {
+  String? _optimisticPath;
 
   void _showLogoutDialog(BuildContext context, WidgetRef ref) {
     showDialog(
@@ -51,10 +58,23 @@ class AdaptiveShell extends ConsumerWidget {
     );
   }
 
+  void _navigate(String path) {
+    final routerPath = GoRouterState.of(context).uri.path;
+    final current = _optimisticPath ?? routerPath;
+    if (current != path) {
+      setState(() => _optimisticPath = path);
+      context.go(path);
+    }
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final isDesktop = ResponsiveHelper.isDesktop(context);
-    final currentPath = GoRouterState.of(context).uri.path;
+    final routerPath = GoRouterState.of(context).uri.path;
+    if (_optimisticPath == routerPath) {
+      _optimisticPath = null;
+    }
+    final activePath = _optimisticPath ?? routerPath;
     final authState = ref.watch(authProvider);
     final user = authState.user;
 
@@ -131,76 +151,85 @@ class AdaptiveShell extends ConsumerWidget {
                         if (user == null || user.hasPermission('dashboard'))
                           _SidebarItem(
                             icon: Icons.dashboard_outlined,
-                            activeIcon: Icons.dashboard,
+                            activeIcon: Icons.dashboard_rounded,
                             label: 'Dashboard',
                             path: '/dashboard',
-                            isActive: currentPath == '/dashboard',
+                            isActive: activePath == '/dashboard',
+                            onTap: () => _navigate('/dashboard'),
                           ),
                         if (user == null || user.hasPermission('patients'))
                           _SidebarItem(
-                            icon: Icons.people_alt_outlined,
-                            activeIcon: Icons.people_alt,
+                            icon: Icons.people_outline_rounded,
+                            activeIcon: Icons.people_rounded,
                             label: 'Patients',
                             path: '/patients',
-                            isActive: currentPath == '/patients',
+                            isActive: activePath == '/patients',
+                            onTap: () => _navigate('/patients'),
                           ),
                         if (user == null || user.hasPermission('appointments'))
                           _SidebarItem(
                             icon: Icons.calendar_today_outlined,
-                            activeIcon: Icons.calendar_today,
+                            activeIcon: Icons.calendar_today_rounded,
                             label: 'Appointments',
                             path: '/appointments',
-                            isActive: currentPath == '/appointments',
+                            isActive: activePath == '/appointments',
+                            onTap: () => _navigate('/appointments'),
                           ),
                         if (user == null || user.hasPermission('bed'))
                           _SidebarItem(
-                            icon: Icons.hotel_outlined,
-                            activeIcon: Icons.hotel,
+                            icon: Icons.single_bed_outlined,
+                            activeIcon: Icons.single_bed_rounded,
                             label: 'Beds & Wards',
                             path: '/beds',
-                            isActive: currentPath == '/beds',
+                            isActive: activePath == '/beds',
+                            onTap: () => _navigate('/beds'),
                           ),
                         if (user == null || user.hasPermission('doctors'))
                           _SidebarItem(
                             icon: Icons.medical_services_outlined,
-                            activeIcon: Icons.medical_services,
+                            activeIcon: Icons.medical_services_rounded,
                             label: 'Doctors',
                             path: '/doctors',
-                            isActive: currentPath == '/doctors',
+                            isActive: activePath == '/doctors',
+                            onTap: () => _navigate('/doctors'),
                           ),
                         if (user == null || user.hasPermission('attendance'))
                           _SidebarItem(
                             icon: Icons.how_to_reg_outlined,
-                            activeIcon: Icons.how_to_reg,
+                            activeIcon: Icons.how_to_reg_rounded,
                             label: 'Staff Attendance',
                             path: '/attendance',
-                            isActive: currentPath == '/attendance',
+                            isActive: activePath == '/attendance',
+                            onTap: () => _navigate('/attendance'),
                           ),
                         if (user == null || user.hasPermission('staff'))
                           _SidebarItem(
                             icon: Icons.admin_panel_settings_outlined,
-                            activeIcon: Icons.admin_panel_settings,
+                            activeIcon: Icons.admin_panel_settings_rounded,
                             label: 'Staff & RBAC',
                             path: '/permissions',
-                            isActive: currentPath == '/permissions',
+                            isActive: activePath == '/permissions',
                             badge: 'RBAC',
+                            onTap: () => _navigate('/permissions'),
                           ),
                         if (user == null || user.hasPermission('bhooma_ai'))
                           _SidebarItem(
                             icon: Icons.auto_awesome_outlined,
-                            activeIcon: Icons.auto_awesome,
+                            activeIcon: Icons.auto_awesome_rounded,
                             label: 'BHOOMA AI',
                             path: '/bhooma-ai',
-                            isActive: currentPath == '/bhooma-ai',
+                            isActive: activePath == '/bhooma-ai',
                             badge: 'AI',
+                            onTap: () => _navigate('/bhooma-ai'),
                           ),
                         if (user == null || user.hasPermission('settings'))
                           _SidebarItem(
                             icon: Icons.settings_outlined,
-                            activeIcon: Icons.settings,
+                            activeIcon: Icons.settings_rounded,
                             label: 'Settings',
                             path: '/settings',
-                            isActive: currentPath == '/settings',
+                            isActive: activePath == '/settings',
+                            onTap: () => _navigate('/settings'),
                           ),
                       ],
                     ),
@@ -257,7 +286,7 @@ class AdaptiveShell extends ConsumerWidget {
             ),
 
             // Main Content Area
-            Expanded(child: child),
+            Expanded(child: widget.child),
           ],
         ),
       );
@@ -265,9 +294,9 @@ class AdaptiveShell extends ConsumerWidget {
 
     // Mobile / Tablet Layout (< 1024px)
     int getBottomNavIndex() {
-      if (currentPath == '/patients') return 1;
-      if (currentPath == '/appointments') return 2;
-      if (currentPath == '/beds') return 3;
+      if (activePath == '/patients') return 1;
+      if (activePath == '/appointments') return 2;
+      if (activePath == '/beds') return 3;
       return 0; // Default to Dashboard
     }
 
@@ -424,7 +453,7 @@ class AdaptiveShell extends ConsumerWidget {
           ],
         ),
       ),
-      body: child,
+      body: widget.child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: getBottomNavIndex(),
         onDestinationSelected: (index) {
@@ -477,6 +506,7 @@ class _SidebarItem extends StatefulWidget {
   final String path;
   final bool isActive;
   final String? badge;
+  final VoidCallback onTap;
 
   const _SidebarItem({
     required this.icon,
@@ -484,6 +514,7 @@ class _SidebarItem extends StatefulWidget {
     required this.label,
     required this.path,
     required this.isActive,
+    required this.onTap,
     this.badge,
   });
 
@@ -496,6 +527,9 @@ class _SidebarItemState extends State<_SidebarItem> {
 
   @override
   Widget build(BuildContext context) {
+    // Only show hover state if item is NOT active
+    final isHover = _isHovered && !widget.isActive;
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 2),
       child: MouseRegion(
@@ -503,48 +537,47 @@ class _SidebarItemState extends State<_SidebarItem> {
         onExit: (_) => setState(() => _isHovered = false),
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
-          onTap: () => context.go(widget.path),
+          onTap: () {
+            setState(() => _isHovered = false);
+            widget.onTap();
+          },
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            duration: const Duration(milliseconds: 120),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: widget.isActive
-                  ? const Color(0xFFEFF6FF)
-                  : (_isHovered ? const Color(0xFFF8FAFC) : Colors.transparent),
+                  ? AppColors.primary
+                  : (isHover ? const Color(0xFFF1F5F9) : Colors.transparent),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: widget.isActive
-                    ? const Color(0xFFDBEAFE)
-                    : (_isHovered ? AppColors.borderLight : Colors.transparent),
-                width: 1,
-              ),
+              boxShadow: widget.isActive
+                  ? [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.22),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ]
+                  : null,
             ),
             child: Row(
               children: [
-                // Left Active Pill Indicator
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  width: widget.isActive ? 3.5 : 0,
-                  height: 18,
-                  margin: EdgeInsets.only(right: widget.isActive ? 8 : 0),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
                 Icon(
                   widget.isActive ? widget.activeIcon : widget.icon,
                   size: 19,
-                  color: widget.isActive ? AppColors.primary : AppColors.textSecondaryLight,
+                  color: widget.isActive
+                      ? Colors.white
+                      : (isHover ? AppColors.primary : AppColors.textSecondaryLight),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     widget.label,
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: widget.isActive ? FontWeight.w700 : FontWeight.w500,
-                      color: widget.isActive ? AppColors.primary : AppColors.textPrimaryLight,
+                      fontWeight: widget.isActive ? FontWeight.w600 : FontWeight.w500,
+                      color: widget.isActive
+                          ? Colors.white
+                          : (isHover ? AppColors.textPrimaryLight : AppColors.textSecondaryLight),
                       letterSpacing: -0.1,
                     ),
                   ),
@@ -553,9 +586,11 @@ class _SidebarItemState extends State<_SidebarItem> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: widget.badge == 'AI'
-                          ? const Color(0xFF7C3AED)
-                          : AppColors.secondary,
+                      color: widget.isActive
+                          ? Colors.white.withValues(alpha: 0.22)
+                          : (widget.badge == 'AI'
+                              ? const Color(0xFF7C3AED)
+                              : AppColors.secondary),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
