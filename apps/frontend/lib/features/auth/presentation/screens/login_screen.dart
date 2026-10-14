@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/fade_slide_in.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -59,11 +61,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: isDesktop ? 480 : double.infinity),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+          child: FadeSlideIn(
+            duration: const Duration(milliseconds: 450),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: isDesktop ? 480 : double.infinity),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
                 // 1. Hospital Brand Header
                 Container(
                   padding: const EdgeInsets.all(18),
@@ -89,25 +93,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                const Text(
+                Text(
                   'MEDICARE HOSPITAL & I.C.U',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.8,
-                    color: AppColors.primary,
-                  ),
+                  style: AppTypography.headingLarge(color: AppColors.primary),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Modernized Clinical Management System',
+                  'Clinical Operations & Hospital Management System',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondaryLight,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: AppTypography.bodyMedium(color: AppColors.textSecondaryLight),
                 ),
                 const SizedBox(height: 28),
 
@@ -417,7 +412,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }
 

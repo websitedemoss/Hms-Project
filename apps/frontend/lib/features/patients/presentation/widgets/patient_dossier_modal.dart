@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/skeleton_loader.dart';
 import '../../domain/models/patient.dart';
 import '../providers/patients_provider.dart';
 
@@ -91,9 +93,33 @@ class PatientDossierModal extends ConsumerWidget {
           // Longitudinal Dossier Content
           Expanded(
             child: dossierAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const Shimmer(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          SkeletonBox(width: 160, height: 32, borderRadius: 8),
+                          SizedBox(width: 12),
+                          SkeletonBox(width: 140, height: 32, borderRadius: 8),
+                          SizedBox(width: 12),
+                          SkeletonBox(width: 160, height: 32, borderRadius: 8),
+                        ],
+                      ),
+                      SizedBox(height: 24),
+                      SkeletonBox(width: double.infinity, height: 110, borderRadius: 12),
+                      SizedBox(height: 16),
+                      SkeletonBox(width: double.infinity, height: 110, borderRadius: 12),
+                      SizedBox(height: 16),
+                      SkeletonBox(width: double.infinity, height: 110, borderRadius: 12),
+                    ],
+                  ),
+                ),
+              ),
               error: (e, _) => Center(
-                child: Text('Error loading clinical dossier: $e', style: const TextStyle(color: AppColors.danger)),
+                child: Text('Error loading clinical dossier: $e', style: AppTypography.bodyMedium(color: AppColors.danger)),
               ),
               data: (dossier) {
                 final appointments = dossier['appointments'] as List<dynamic>? ?? [];

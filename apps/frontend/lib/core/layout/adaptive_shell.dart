@@ -470,7 +470,7 @@ class AdaptiveShell extends ConsumerWidget {
   }
 }
 
-class _SidebarItem extends StatelessWidget {
+class _SidebarItem extends StatefulWidget {
   final IconData icon;
   final IconData activeIcon;
   final String label;
@@ -488,55 +488,87 @@ class _SidebarItem extends StatelessWidget {
   });
 
   @override
+  State<_SidebarItem> createState() => _SidebarItemState();
+}
+
+class _SidebarItemState extends State<_SidebarItem> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 2),
-      child: InkWell(
-        onTap: () => context.go(path),
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-          decoration: BoxDecoration(
-            color: isActive ? AppColors.primary.withValues(alpha: 0.1) : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                isActive ? activeIcon : icon,
-                size: 20,
-                color: isActive ? AppColors.primary : AppColors.textSecondaryLight,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: () => context.go(widget.path),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: widget.isActive
+                  ? const Color(0xFFEFF6FF)
+                  : (_isHovered ? const Color(0xFFF8FAFC) : Colors.transparent),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: widget.isActive
+                    ? const Color(0xFFDBEAFE)
+                    : (_isHovered ? AppColors.borderLight : Colors.transparent),
+                width: 1,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                    color: isActive ? AppColors.primary : AppColors.textPrimaryLight,
+            ),
+            child: Row(
+              children: [
+                // Left Active Pill Indicator
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: widget.isActive ? 3.5 : 0,
+                  height: 18,
+                  margin: EdgeInsets.only(right: widget.isActive ? 8 : 0),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(4),
                   ),
                 ),
-              ),
-              if (badge != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: badge == 'AI'
-                        ? const Color(0xFF7C3AED)
-                        : AppColors.secondary,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
+                Icon(
+                  widget.isActive ? widget.activeIcon : widget.icon,
+                  size: 19,
+                  color: widget.isActive ? AppColors.primary : AppColors.textSecondaryLight,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
                   child: Text(
-                    badge!,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                    widget.label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: widget.isActive ? FontWeight.w700 : FontWeight.w500,
+                      color: widget.isActive ? AppColors.primary : AppColors.textPrimaryLight,
+                      letterSpacing: -0.1,
                     ),
                   ),
                 ),
-            ],
+                if (widget.badge != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: widget.badge == 'AI'
+                          ? const Color(0xFF7C3AED)
+                          : AppColors.secondary,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      widget.badge!,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

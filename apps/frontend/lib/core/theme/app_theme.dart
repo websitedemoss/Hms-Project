@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
+import 'app_typography.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
@@ -22,39 +23,36 @@ class AppTheme {
         onError: Colors.white,
       ),
       textTheme: baseTextTheme.copyWith(
-        displayLarge: baseTextTheme.displayLarge?.copyWith(
-          color: AppColors.textPrimaryLight,
-          fontWeight: FontWeight.bold,
-        ),
-        titleLarge: baseTextTheme.titleLarge?.copyWith(
-          color: AppColors.textPrimaryLight,
-          fontWeight: FontWeight.w600,
-          fontSize: 18,
-        ),
-        bodyLarge: baseTextTheme.bodyLarge?.copyWith(
-          color: AppColors.textPrimaryLight,
+        displayLarge: AppTypography.displayLarge(),
+        displayMedium: AppTypography.displayMedium(),
+        headlineLarge: AppTypography.headingLarge(),
+        headlineMedium: AppTypography.headingMedium(),
+        headlineSmall: AppTypography.headingSmall(),
+        titleLarge: AppTypography.headingSmall(color: AppColors.textPrimaryLight),
+        titleMedium: GoogleFonts.plusJakartaSans(
           fontSize: 15,
-        ),
-        bodyMedium: baseTextTheme.bodyMedium?.copyWith(
-          color: AppColors.textSecondaryLight,
-          fontSize: 13,
-        ),
-        labelLarge: baseTextTheme.labelLarge?.copyWith(
           fontWeight: FontWeight.w600,
-          fontSize: 14,
+          color: AppColors.textPrimaryLight,
         ),
+        titleSmall: GoogleFonts.plusJakartaSans(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimaryLight,
+        ),
+        bodyLarge: AppTypography.bodyLarge(),
+        bodyMedium: AppTypography.bodyMedium(),
+        bodySmall: AppTypography.bodySmall(),
+        labelLarge: AppTypography.labelLarge(),
+        labelMedium: AppTypography.labelMedium(),
+        labelSmall: AppTypography.labelSmall(),
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimaryLight,
         elevation: 0,
         scrolledUnderElevation: 1,
         centerTitle: false,
-        titleTextStyle: TextStyle(
-          color: AppColors.textPrimaryLight,
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-        ),
+        titleTextStyle: AppTypography.headingSmall(),
       ),
       cardTheme: CardThemeData(
         color: AppColors.surfaceLight,
@@ -69,29 +67,38 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 48), // Strict 48dp minimum for clinical touch
+          minimumSize: const Size(double.infinity, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
-          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          textStyle: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            letterSpacing: 0.1,
+          ),
           elevation: 0,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primary,
-          minimumSize: const Size(double.infinity, 48),
+          minimumSize: const Size(double.infinity, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           side: const BorderSide(color: AppColors.borderLight),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
-          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          textStyle: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: AppColors.borderLight),
@@ -108,7 +115,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: AppColors.danger),
         ),
-        hintStyle: const TextStyle(color: AppColors.textSecondaryLight, fontSize: 13),
+        hintStyle: GoogleFonts.inter(
+          color: AppColors.textSecondaryLight,
+          fontSize: 13,
+        ),
       ),
       dividerTheme: const DividerThemeData(
         color: AppColors.borderLight,
