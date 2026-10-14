@@ -1,0 +1,563 @@
+// apps/backend/prisma/schema.prisma
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 1. Multi-Tenant Hospital Anchor
+model Hospital {
+  id           Int      @id @default(autoincrement())
+  hospitalCode String   @unique @map("hospital_code") @db.VarChar(20)
+  name         String   @db.VarChar(255)
+  tagline      String?  @default("Medicare Hospital & I.C.U") @db.VarChar(255)
+  phone        String?  @db.VarChar(30)
+  email        String?  @db.VarChar(150)
+  address      String?
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  departments         Department[]
+  doctors             Doctor[]
+  patients            Patient[]
+  beds                Bed[]
+  appointments        Appointment[]
+  staff               Staff[]
+  charges             ConsultationCharge[]
+  geofences           HospitalGeofence[]
+  attendances         StaffAttendance[]
+  onlineConsultations OnlineConsultation[]
+  fileAuditLogs       FileAuditLog[]
+  patientFiles        PatientFile[]
+  aiConfigs           AiConfig[]
+  aiConversations     AiConversation[]
+  aiPendingActions    AiPendingAction[]
+  aiActionLogs        AiActionLog[]
+
+  @@map("hospitals")
+}
+
+// 2. Clinical Departments
+model Department {
+  id         String   @id @db.VarChar(100)
+  hospitalId Int      @map("hospital_id")
+  name       String   @db.VarChar(150)
+  icon       String?  @default("fa-hospital") @db.VarChar(60)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  hospital         Hospital         @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  doctors          Doctor[]
+  doctorCategories DoctorCategory[]
+
+  @@index([hospitalId])
+  @@map("departments")
+}
+
+// 3. Medical Doctors
+model Doctor {
+  id              String   @id @db.VarChar(50)
+  hospitalId      Int      @map("hospital_id")
+  name            String   @db.VarChar(150)
+  departmentId    String?  @map("department_id") @db.VarChar(100)
+  phone           String?  @db.VarChar(50)
+  degree          String?  @db.VarChar(150)
+  experience      String?  @db.VarChar(50)
+  consultationFee Decimal  @default(500.00) @map("consultation_fee") @db.Decimal(10, 2)
+  status          String   @default("Available") @db.VarChar(30)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  hospital            Hospital             @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  department          Department?          @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  categories          DoctorCategory[]
+  daySchedules        DoctorDaySchedule[]
+  slots               DoctorSlot[]
+  appointments        Appointment[]
+  onlineConsultations OnlineConsultation[]
+
+  @@index([hospitalId])
+  @@map("doctors")
+}
+
+// 4. Doctor Specialty Categories (Many-to-Many)
+model DoctorCategory {
+  doctorId     String @map("doctor_id") @db.VarChar(50)
+  departmentId String @map("department_id") @db.VarChar(100)
+
+  doctor     Doctor     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@id([doctorId, departmentId])
+  @@map("doctor_categories")
+}
+
+// 5. Doctor Day Schedules
+model DoctorDaySchedule {
+  id              Int      @id @default(autoincrement())
+  doctorId        String   @map("doctor_id") @db.VarChar(50)
+  dayOfWeek       String   @map("day_of_week") @db.VarChar(20)
+  isAvailable     Boolean  @default(true) @map("is_available")
+  startTime       String   @default("09:00 AM") @map("start_time") @db.VarChar(20)
+  endTime         String   @default("05:00 PM") @map("end_time") @db.VarChar(20)
+  durationMinutes Int      @default(30) @map("duration_minutes")
+  breakStart      String?  @map("break_start") @db.VarChar(20)
+  breakEnd        String?  @map("break_end") @db.VarChar(20)
+  customSlots     Json?    @default("[]") @map("custom_slots")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@unique([doctorId, dayOfWeek], name: "uq_doctor_day")
+  @@index([doctorId])
+  @@map("doctor_day_schedules")
+}
+
+// 6. Doctor Slots Registry
+model DoctorSlot {
+  id        Int      @id @default(autoincrement())
+  doctorId  String   @map("doctor_id") @db.VarChar(50)
+  timeSlot  String   @map("time_slot") @db.VarChar(30)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
+  @@map("doctor_slots")
+}
+
+// 7. Patient Demographics & Record Anchor
+model Patient {
+  id                    String    @id @db.VarChar(50) // E.g. CP-2026-001
+  hospitalId            Int       @map("hospital_id")
+  name                  String    @db.VarChar(100)
+  surname               String    @db.VarChar(100)
+  fatherName            String?   @map("father_name") @db.VarChar(100)
+  phone                 String?   @db.VarChar(30)
+  age                   Int?
+  gender                String?   @db.VarChar(20)
+  bloodGroup            String?   @map("blood_group") @db.VarChar(10)
+  emergencyContactName  String?   @map("emergency_contact_name") @db.VarChar(150)
+  emergencyContactPhone String?   @map("emergency_contact_phone") @db.VarChar(30)
+  qrToken               String    @unique @default(uuid()) @map("qr_token") @db.Uuid
+  qrGeneratedAt         DateTime? @default(now()) @map("qr_generated_at") @db.Timestamptz
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  hospital            Hospital             @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  appointments        Appointment[]
+  beds                Bed[]
+  timelineEvents      TimelineEvent[]
+  patientFiles        PatientFile[]
+  onlineConsultations OnlineConsultation[]
+
+  @@index([hospitalId])
+  @@index([phone])
+  @@index([name, surname])
+  @@index([qrToken])
+  @@map("patients")
+}
+
+// 8. Inpatient Beds & Wards
+model Bed {
+  id         String   @id @db.VarChar(50)
+  hospitalId Int      @map("hospital_id")
+  bedNumber  String   @map("bed_number") @db.VarChar(50)
+  type       String   @db.VarChar(50) // 'ICU', 'General Ward', 'Private Room', 'Semi-Private', 'Emergency'
+  wing       String?  @default("Main Ward") @db.VarChar(100)
+  status     String   @default("Available") @db.VarChar(30) // 'Available', 'Occupied', 'Maintenance'
+  patientId  String?  @map("patient_id") @db.VarChar(50)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient  Patient? @relation(fields: [patientId], references: [id], onDelete: SetNull)
+
+  @@unique([hospitalId, bedNumber], name: "uq_hospital_bed")
+  @@index([hospitalId, status])
+  @@map("beds")
+}
+
+// 9. Appointments & Live Triage
+model Appointment {
+  id              Int       @id @default(autoincrement())
+  hospitalId      Int       @map("hospital_id")
+  patientId       String    @map("patient_id") @db.VarChar(50)
+  doctorId        String    @map("doctor_id") @db.VarChar(50)
+  type            String?   @default("General Consultation") @db.VarChar(100)
+  date            DateTime  @db.Date
+  slot            String    @db.VarChar(30)
+  tokenNumber     Int?      @map("token_number")
+  tokenAssignedAt DateTime? @map("token_assigned_at") @db.Timestamptz
+  tokenAssignedBy Int?      @map("token_assigned_by")
+  symptoms        String?
+  allergies       String?
+  status          String    @default("Scheduled") @db.VarChar(50)
+  stage           Int       @default(1)
+  bedNumber       String?   @map("bed_number") @db.VarChar(50)
+  doctorNotes     String?   @map("doctor_notes")
+  bookingType     String    @default("walk-in") @map("booking_type") @db.VarChar(30)
+  bookingRef      String?   @map("booking_ref") @db.VarChar(50)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  hospital            Hospital             @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient             Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor              Doctor               @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  diagnoses           Diagnosis[]
+  prescriptions       Prescription[]
+  timelineEvents      TimelineEvent[]
+  patientFiles        PatientFile[]
+  onlineConsultations OnlineConsultation[]
+
+  @@index([hospitalId, date])
+  @@index([patientId])
+  @@index([doctorId, date, slot])
+  @@map("appointments")
+}
+
+// 10. Clinical Diagnoses
+model Diagnosis {
+  id            Int      @id @default(autoincrement())
+  appointmentId Int      @map("appointment_id")
+  icd10Code     String?  @map("icd10_code") @db.VarChar(20)
+  description   String
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId])
+  @@map("diagnoses")
+}
+
+// 11. Prescriptions
+model Prescription {
+  id            Int      @id @default(autoincrement())
+  appointmentId Int      @map("appointment_id")
+  medicineName  String   @map("medicine_name") @db.VarChar(255)
+  dosage        String   @db.VarChar(100)
+  frequency     String   @db.VarChar(100) // TID, BID, OD, etc.
+  duration      String   @db.VarChar(100)
+  instructions  String?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId])
+  @@map("prescriptions")
+}
+
+// 12. Patient Visit Timeline Events
+model TimelineEvent {
+  id               Int      @id @default(autoincrement())
+  appointmentId    Int?     @map("appointment_id")
+  patientId        String   @map("patient_id") @db.VarChar(50)
+  eventTime        String   @map("event_time") @db.VarChar(50)
+  eventDescription String   @map("event_description")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  patient     Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([appointmentId])
+  @@map("timeline_events")
+}
+
+// 13. Patient Medical Files (Decoupled Cloud Storage Metadata)
+model PatientFile {
+  id             Int      @id @default(autoincrement())
+  hospitalId     Int      @map("hospital_id")
+  patientId      String   @map("patient_id") @db.VarChar(50)
+  appointmentId  Int?     @map("appointment_id")
+  title          String   @db.VarChar(255)
+  category       String   @default("Other") @db.VarChar(60) // X-Ray, Blood Report, MRI, etc.
+  highlight      String?  @db.VarChar(255)
+  description    String?
+  storagePath    String   @map("storage_path") @db.VarChar(500)
+  thumbnailPath  String?  @map("thumbnail_path") @db.VarChar(500)
+  mimeType       String   @map("mime_type") @db.VarChar(100)
+  fileSizeBytes  BigInt   @map("file_size_bytes")
+  tags           String?  @db.VarChar(500)
+  uploadedById   Int?     @map("uploaded_by_id")
+  uploadedByName String?  @map("uploaded_by_name") @db.VarChar(150)
+  recordDate     DateTime @default(now()) @map("record_date") @db.Timestamptz
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  hospital    Hospital     @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient     Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@index([patientId])
+  @@index([appointmentId])
+  @@index([hospitalId])
+  @@map("patient_files")
+}
+
+// 14. File Access Audit Log
+model FileAuditLog {
+  id         Int      @id @default(autoincrement())
+  hospitalId Int      @map("hospital_id")
+  patientId  String   @map("patient_id") @db.VarChar(50)
+  fileId     Int?     @map("file_id")
+  action     String   @db.VarChar(30) // upload, view, edit, delete, download
+  staffId    Int      @map("staff_id")
+  staffName  String   @map("staff_name") @db.VarChar(200)
+  details    String?
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([hospitalId, createdAt])
+  @@map("file_audit_log")
+}
+
+// 15. Staff & Employee Registry
+model Staff {
+  id               Int       @id @default(autoincrement())
+  hospitalId       Int       @map("hospital_id")
+  staffCode        String    @map("staff_code") @db.VarChar(50)
+  firstName        String    @map("first_name") @db.VarChar(100)
+  lastName         String    @map("last_name") @db.VarChar(100)
+  email            String?   @db.VarChar(150)
+  phone            String?   @db.VarChar(50)
+  role             String    @db.VarChar(100)
+  department       String    @db.VarChar(100)
+  gender           String?   @default("Female") @db.VarChar(20)
+  dateOfBirth      DateTime? @map("date_of_birth") @db.Date
+  joiningDate      DateTime? @map("joining_date") @db.Date
+  shift            String?   @default("Morning (08:00 - 16:00)") @db.VarChar(100)
+  status           String    @default("Active") @db.VarChar(30)
+  qualification    String?   @db.VarChar(255)
+  salary           Decimal?  @default(0.00) @db.Decimal(12, 2)
+  bloodGroup       String?   @map("blood_group") @db.VarChar(10)
+  emergencyContact String?   @map("emergency_contact") @db.VarChar(100)
+  address          String?
+  isUser           Boolean   @default(false) @map("is_user")
+  username         String?   @unique @db.VarChar(100)
+  passwordHash     String?   @map("password_hash") @db.VarChar(255) // Argon2id ONLY
+  avatarUrl        String?   @map("avatar_url") @db.VarChar(500)
+  faceEmbedding    Json?     @map("face_embedding") // 128-float biometric vector
+  accountStatus    String    @default("Active") @map("account_status") @db.VarChar(30)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  hospital    Hospital          @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  permissions StaffPermission[]
+  attendances StaffAttendance[]
+
+  @@unique([hospitalId, staffCode], name: "uq_staff_hospital_code")
+  @@index([hospitalId])
+  @@index([username])
+  @@map("staff")
+}
+
+// 16. Granular 11+ Staff Permissions
+model StaffPermission {
+  id              Int      @id @default(autoincrement())
+  staffId         Int      @map("staff_id")
+  permissionKey   String   @map("permission_key") @db.VarChar(60)
+  permissionValue Boolean  @default(false) @map("permission_value")
+  grantedBy       Int?     @map("granted_by")
+  grantedAt       DateTime @default(now()) @map("granted_at") @db.Timestamptz
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, permissionKey], name: "uq_staff_perm")
+  @@index([staffId])
+  @@map("staff_permissions")
+}
+
+// 17. Hospital Geofence Boundary
+model HospitalGeofence {
+  id           Int      @id @default(autoincrement())
+  hospitalId   Int      @map("hospital_id")
+  name         String   @default("Main Clinical Building") @db.VarChar(100)
+  latitude     Decimal  @db.Decimal(10, 7)
+  longitude    Decimal  @db.Decimal(10, 7)
+  radiusMeters Int      @default(150) @map("radius_meters")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@index([hospitalId])
+  @@map("hospital_geofence")
+}
+
+// 18. Daily Staff Attendance Records
+model StaffAttendance {
+  id               Int      @id @default(autoincrement())
+  hospitalId       Int      @map("hospital_id")
+  staffId          Int      @map("staff_id")
+  date             DateTime @db.Date
+  status           String   @default("Present") @db.VarChar(30)
+  checkInTime      String?  @map("check_in_time") @db.VarChar(20)
+  checkOutTime     String?  @map("check_out_time") @db.VarChar(20)
+  workingHours     Decimal? @map("working_hours") @db.Decimal(4, 2)
+  selfieVerified   Boolean  @default(false) @map("selfie_verified")
+  locationVerified Boolean  @default(false) @map("location_verified")
+  checkInLat       Decimal? @map("check_in_lat") @db.Decimal(10, 7)
+  checkInLng       Decimal? @map("check_in_lng") @db.Decimal(10, 7)
+  faceConfidence   Decimal? @map("face_confidence") @db.Decimal(5, 4)
+  checkInMethod    String?  @default("manual") @map("check_in_method") @db.VarChar(30)
+  markedBy         String?  @default("System") @map("marked_by") @db.VarChar(100)
+  notes            String?
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  staff    Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, date], name: "uq_staff_attendance_day")
+  @@index([hospitalId, date])
+  @@map("staff_attendance")
+}
+
+// 19. Master Consultation Charges
+model ConsultationCharge {
+  id         Int      @id @default(autoincrement())
+  hospitalId Int      @map("hospital_id")
+  chargeType String   @map("charge_type") @db.VarChar(100)
+  chargeName String   @map("charge_name") @db.VarChar(255)
+  amount     Decimal  @default(0.00) @db.Decimal(10, 2)
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@index([hospitalId])
+  @@map("consultation_charges")
+}
+
+// 20. Online Consultations
+model OnlineConsultation {
+  id                Int       @id @default(autoincrement())
+  hospitalId        Int       @map("hospital_id")
+  patientId         String    @map("patient_id") @db.VarChar(50)
+  doctorId          String    @map("doctor_id") @db.VarChar(50)
+  appointmentId     Int?      @map("appointment_id")
+  status            String    @default("initiated") @db.VarChar(30)
+  diagnosis         String?
+  prescriptionNotes String?   @map("prescription_notes")
+  doctorNotes       String?   @map("doctor_notes")
+  consultationFee   Decimal   @default(0.00) @map("consultation_fee") @db.Decimal(10, 2)
+  feeStatus         String    @default("pending") @map("fee_status") @db.VarChar(30)
+  startedAt         DateTime  @default(now()) @map("started_at") @db.Timestamptz
+  completedAt       DateTime? @map("completed_at") @db.Timestamptz
+
+  hospital    Hospital     @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient     Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor      Doctor       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@index([hospitalId])
+  @@index([patientId])
+  @@map("online_consultations")
+}
+
+// 21. AI Configuration
+model AiConfig {
+  id          Int      @id @default(autoincrement())
+  hospitalId  Int      @unique @map("hospital_id")
+  enabled     Boolean  @default(true)
+  modelName   String   @default("qwen2.5:3b") @map("model_name") @db.VarChar(100)
+  provider    String   @default("ollama") @db.VarChar(50)
+  apiUrl      String   @default("http://localhost:11434") @map("api_url") @db.VarChar(255)
+  maxTokens   Int      @default(2048) @map("max_tokens")
+  temperature Decimal  @default(0.20) @db.Decimal(3, 2)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@map("ai_config")
+}
+
+// 22. AI Conversations
+model AiConversation {
+  id          Int      @id @default(autoincrement())
+  hospitalId  Int      @map("hospital_id")
+  userId      String   @map("user_id") @db.VarChar(100)
+  userRole    String   @default("Admin") @map("user_role") @db.VarChar(100)
+  title       String   @default("Clinical Query") @db.VarChar(255)
+  pageContext String?  @map("page_context") @db.VarChar(100)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  hospital       Hospital          @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  messages       AiChatMessage[]
+  pendingActions AiPendingAction[]
+
+  @@index([hospitalId, userId])
+  @@map("ai_conversations")
+}
+
+// 23. AI Chat Messages
+model AiChatMessage {
+  id             Int      @id @default(autoincrement())
+  conversationId Int      @map("conversation_id")
+  role           String   @db.VarChar(20) // user, assistant, system
+  content        String
+  toolCalls      Json?    @map("tool_calls")
+  tokensUsed     Int      @default(0) @map("tokens_used")
+  responseTimeMs Int      @default(0) @map("response_time_ms")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("ai_chat_messages")
+}
+
+// 24. AI Pending Action Gate
+model AiPendingAction {
+  id             Int       @id @default(autoincrement())
+  conversationId Int       @map("conversation_id")
+  hospitalId     Int       @map("hospital_id")
+  actionType     String    @map("action_type") @db.VarChar(30) // INSERT, UPDATE, DELETE
+  targetTable    String    @map("target_table") @db.VarChar(100)
+  description    String
+  payload        Json
+  status         String    @default("pending") @db.VarChar(30) // pending, confirmed, cancelled, executed
+  confirmedAt    DateTime? @map("confirmed_at") @db.Timestamptz
+  executedAt     DateTime? @map("executed_at") @db.Timestamptz
+  errorMessage   String?   @map("error_message")
+  expiresAt      DateTime  @map("expires_at") @db.Timestamptz
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  hospital     Hospital       @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  actionLogs   AiActionLog[]
+
+  @@index([status, expiresAt])
+  @@map("ai_pending_actions")
+}
+
+// 25. AI Executed Action Audit Log
+model AiActionLog {
+  id              Int      @id @default(autoincrement())
+  hospitalId      Int      @map("hospital_id")
+  userId          String   @map("user_id") @db.VarChar(100)
+  userRole        String   @map("user_role") @db.VarChar(100)
+  actionId        Int?     @map("action_id")
+  actionType      String   @map("action_type") @db.VarChar(30)
+  targetTable     String   @map("target_table") @db.VarChar(100)
+  mutationDetails Json     @map("mutation_details")
+  success         Boolean  @default(true)
+  errorMessage    String?  @map("error_message")
+  ipAddress       String?  @map("ip_address") @db.VarChar(45)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  hospital      Hospital         @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  pendingAction AiPendingAction? @relation(fields: [actionId], references: [id], onDelete: SetNull)
+
+  @@index([hospitalId, createdAt])
+  @@map("ai_action_log")
+}

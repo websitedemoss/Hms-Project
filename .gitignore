@@ -18,6 +18,22 @@ uploads/*
 
 # Environment
 .env
+.env.*
+!.env.example
+*.env
+
+# Modern Monorepo (NestJS & Flutter)
+node_modules/
+dist/
+*.tsbuildinfo
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+apps/frontend/build/
+apps/backend/dist/
+apps/backend/node_modules/
+
 
 # Temporary/scratch files
 *.log
