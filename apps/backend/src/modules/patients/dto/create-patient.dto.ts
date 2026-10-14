@@ -1,7 +1,6 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsInt,
-  IsNotEmpty,
   IsOptional,
   IsString,
   Max,
@@ -9,15 +8,34 @@ import {
 } from 'class-validator';
 
 export class CreatePatientDto {
-  @ApiProperty({ description: 'First name', example: 'Ramesh' })
+  @ApiPropertyOptional({ description: 'First name', example: 'Ramesh' })
   @IsString()
-  @IsNotEmpty({ message: 'First name is required' })
-  name: string;
+  @IsOptional()
+  name?: string;
 
-  @ApiProperty({ description: 'Surname / Family name', example: 'Patel' })
+  @ApiPropertyOptional({ description: 'First name alias', example: 'Ramesh' })
   @IsString()
-  @IsNotEmpty({ message: 'Surname is required' })
-  surname: string;
+  @IsOptional()
+  firstName?: string;
+
+  @ApiPropertyOptional({ description: 'Surname / Family name', example: 'Patel' })
+  @IsString()
+  @IsOptional()
+  surname?: string;
+
+  @ApiPropertyOptional({ description: 'Last name alias', example: 'Patel' })
+  @IsString()
+  @IsOptional()
+  lastName?: string;
+
+  @ApiPropertyOptional({ description: 'Date of birth', example: '1990-01-01' })
+  @IsString()
+  @IsOptional()
+  dateOfBirth?: string;
+
+  @ApiPropertyOptional({ description: 'Emergency contact object' })
+  @IsOptional()
+  emergencyContact?: any;
 
   @ApiPropertyOptional({ description: "Father's or Spouse's name", example: 'Harishbhai Patel' })
   @IsString()
@@ -55,4 +73,14 @@ export class CreatePatientDto {
   @IsString()
   @IsOptional()
   emergencyContactPhone?: string;
+
+  @ApiPropertyOptional({ description: 'Email address' })
+  @IsString()
+  @IsOptional()
+  email?: string;
+
+  @ApiPropertyOptional({ description: 'Residential address' })
+  @IsString()
+  @IsOptional()
+  address?: string;
 }

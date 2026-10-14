@@ -1,6 +1,7 @@
 import {
   Injectable,
   NotFoundException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
@@ -205,19 +206,43 @@ export class PatientsService {
     const formattedId = `${prefix}-${String(nextNumber).padStart(3, '0')}`;
     const qrToken = randomUUID();
 
+    const patientName = (dto.name || dto.firstName || '').trim();
+    const patientSurname = (dto.surname || dto.lastName || '').trim();
+    if (!patientName) {
+      throw new BadRequestException('First name is required');
+    }
+    if (!patientSurname) {
+      throw new BadRequestException('Surname / Last name is required');
+    }
+
+    let calculatedAge = dto.age;
+    if (calculatedAge === undefined && dto.dateOfBirth) {
+      const birthYear = new Date(dto.dateOfBirth).getFullYear();
+      if (!isNaN(birthYear)) {
+        calculatedAge = Math.max(0, new Date().getFullYear() - birthYear);
+      }
+    }
+
+    let emerName = dto.emergencyContactName?.trim();
+    let emerPhone = dto.emergencyContactPhone?.trim();
+    if (dto.emergencyContact && typeof dto.emergencyContact === 'object') {
+      emerName = dto.emergencyContact.name || emerName;
+      emerPhone = dto.emergencyContact.phone || emerPhone;
+    }
+
     const patient = await this.prisma.patient.create({
       data: {
         id: formattedId,
         hospitalId,
-        name: dto.name.trim(),
-        surname: dto.surname.trim(),
+        name: patientName,
+        surname: patientSurname,
         fatherName: dto.fatherName?.trim(),
         phone: dto.phone?.trim(),
-        age: dto.age,
+        age: calculatedAge,
         gender: dto.gender,
         bloodGroup: dto.bloodGroup,
-        emergencyContactName: dto.emergencyContactName?.trim(),
-        emergencyContactPhone: dto.emergencyContactPhone?.trim(),
+        emergencyContactName: emerName,
+        emergencyContactPhone: emerPhone,
         qrToken,
       },
     });

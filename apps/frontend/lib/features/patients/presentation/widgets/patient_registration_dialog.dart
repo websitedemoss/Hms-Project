@@ -98,21 +98,18 @@ class _PatientRegistrationDialogState extends ConsumerState<PatientRegistrationD
     setState(() => _isSubmitting = true);
 
     try {
+      final age = DateTime.now().year - _dob.year;
       final data = {
-        'firstName': _firstNameController.text.trim(),
-        'lastName': _lastNameController.text.trim(),
-        'dateOfBirth': _dob.toIso8601String().split('T')[0],
+        'name': _firstNameController.text.trim(),
+        'surname': _lastNameController.text.trim(),
+        'age': age > 0 ? age : 0,
         'gender': _gender,
         'bloodGroup': _bloodGroup,
-        'phone': _phoneController.text.trim(),
-        if (_emailController.text.isNotEmpty) 'email': _emailController.text.trim(),
-        if (_addressController.text.isNotEmpty) 'address': _addressController.text.trim(),
+        if (_phoneController.text.isNotEmpty) 'phone': _phoneController.text.trim(),
         if (_emergencyNameController.text.isNotEmpty)
-          'emergencyContact': {
-            'name': _emergencyNameController.text.trim(),
-            'phone': _emergencyPhoneController.text.trim(),
-            'relation': _emergencyRelationController.text.trim(),
-          },
+          'emergencyContactName': _emergencyNameController.text.trim(),
+        if (_emergencyPhoneController.text.isNotEmpty)
+          'emergencyContactPhone': _emergencyPhoneController.text.trim(),
       };
 
       final created = await ref.read(patientsProvider.notifier).registerPatient(data);

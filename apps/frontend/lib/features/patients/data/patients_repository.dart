@@ -17,18 +17,32 @@ class PatientsRepository {
       throw Exception(json['message'] ?? 'Failed to fetch patients');
     }
 
-    final data = json['data'] as Map<String, dynamic>;
-    final list = (data['data'] as List<dynamic>?)
-            ?.map((e) => Patient.fromJson(e as Map<String, dynamic>))
-            .toList() ??
-        [];
-    final meta = data['meta'] as Map<String, dynamic>? ?? {};
+    List<Patient> list = [];
+    int total = 0;
+    int pageNum = page;
+    int totalPages = 1;
+
+    final rawData = json['data'];
+    if (rawData is List) {
+      list = rawData.map((e) => Patient.fromJson(e as Map<String, dynamic>)).toList();
+      final meta = json['meta'] as Map<String, dynamic>? ?? {};
+      total = meta['total'] as int? ?? list.length;
+      pageNum = meta['page'] as int? ?? page;
+      totalPages = meta['totalPages'] as int? ?? 1;
+    } else if (rawData is Map<String, dynamic>) {
+      final listData = rawData['data'] as List<dynamic>? ?? [];
+      list = listData.map((e) => Patient.fromJson(e as Map<String, dynamic>)).toList();
+      final meta = rawData['meta'] as Map<String, dynamic>? ?? json['meta'] as Map<String, dynamic>? ?? {};
+      total = meta['total'] as int? ?? list.length;
+      pageNum = meta['page'] as int? ?? page;
+      totalPages = meta['totalPages'] as int? ?? 1;
+    }
 
     return {
       'patients': list,
-      'total': meta['total'] as int? ?? list.length,
-      'page': meta['page'] as int? ?? page,
-      'totalPages': meta['totalPages'] as int? ?? 1,
+      'total': total,
+      'page': pageNum,
+      'totalPages': totalPages,
     };
   }
 
