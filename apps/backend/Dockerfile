@@ -1,37 +1,35 @@
-FROM node:20-alpine AS builder
+# apps/backend/Dockerfile
+FROM node:22-bookworm-slim AS builder
 
 WORKDIR /app
 
-# Copy dependencies manifest
-COPY package*.json ./
+# Install OpenSSL & native build dependencies for Argon2 & Prisma
+RUN apt-get update -y && apt-get install -y openssl python3 make g++ && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
+COPY package*.json ./
+COPY prisma ./prisma/
+
 RUN npm ci
 
-# Copy Prisma schema and generate client
-COPY prisma ./prisma/
+COPY . .
+
 RUN npx prisma generate
-
-# Copy source and config files
-COPY tsconfig*.json nest-cli.json ./
-COPY src ./src/
-
-# Build NestJS
 RUN npm run build
 
-# Production runtime stage
-FROM node:20-alpine AS runner
+# Production Runner stage
+FROM node:22-bookworm-slim AS runner
 
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=3000
 
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+COPY package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/package.json ./package.json
 
 EXPOSE 3000
 
-CMD ["node", "dist/main.js"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/main.js"]

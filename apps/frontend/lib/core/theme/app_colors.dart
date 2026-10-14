@@ -19,6 +19,8 @@ class AppColors {
   // Text Hierarchy
   static const Color textPrimaryLight = Color(0xFF0F172A); // Slate-900
   static const Color textSecondaryLight = Color(0xFF64748B); // Slate-500
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textSecondary = Color(0xFF64748B);
   static const Color textPrimaryDark = Color(0xFFF8FAFC);
   static const Color textSecondaryDark = Color(0xFF94A3B8);
 

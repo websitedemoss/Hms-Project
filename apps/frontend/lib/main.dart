@@ -12,16 +12,18 @@ void main() {
   );
 }
 
-class HospitalApp extends StatelessWidget {
+class HospitalApp extends ConsumerWidget {
   const HospitalApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+
     return MaterialApp.router(
       title: 'Medicare Hospital & I.C.U',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      routerConfig: appRouter,
+      routerConfig: router,
     );
   }
 }

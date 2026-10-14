@@ -349,8 +349,9 @@ model Staff {
   updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   hospital    Hospital          @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  permissions StaffPermission[]
-  attendances StaffAttendance[]
+  permissions   StaffPermission[]
+  attendances   StaffAttendance[]
+  refreshTokens RefreshToken[]
 
   @@unique([hospitalId, staffCode], name: "uq_staff_hospital_code")
   @@index([hospitalId])
@@ -560,4 +561,19 @@ model AiActionLog {
 
   @@index([hospitalId, createdAt])
   @@map("ai_action_log")
+}
+
+// 26. Refresh Tokens (Dual-Token JWT & Rotation)
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique @db.VarChar(500)
+  staffId   Int      @map("staff_id")
+  isRevoked Boolean  @default(false) @map("is_revoked")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+  @@map("refresh_tokens")
 }
