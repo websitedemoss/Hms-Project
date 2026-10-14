@@ -24,15 +24,24 @@ class PatientsRepository {
 
     final rawData = json['data'];
     if (rawData is List) {
-      list = rawData.map((e) => Patient.fromJson(e as Map<String, dynamic>)).toList();
-      final meta = json['meta'] as Map<String, dynamic>? ?? {};
+      list = rawData
+          .whereType<Map>()
+          .map((e) => Patient.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+      final meta = json['meta'] is Map ? Map<String, dynamic>.from(json['meta'] as Map) : <String, dynamic>{};
       total = meta['total'] as int? ?? list.length;
       pageNum = meta['page'] as int? ?? page;
       totalPages = meta['totalPages'] as int? ?? 1;
-    } else if (rawData is Map<String, dynamic>) {
-      final listData = rawData['data'] as List<dynamic>? ?? [];
-      list = listData.map((e) => Patient.fromJson(e as Map<String, dynamic>)).toList();
-      final meta = rawData['meta'] as Map<String, dynamic>? ?? json['meta'] as Map<String, dynamic>? ?? {};
+    } else if (rawData is Map) {
+      final rawMap = Map<String, dynamic>.from(rawData);
+      final listData = rawMap['data'] as List<dynamic>? ?? [];
+      list = listData
+          .whereType<Map>()
+          .map((e) => Patient.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+      final meta = rawMap['meta'] is Map
+          ? Map<String, dynamic>.from(rawMap['meta'] as Map)
+          : (json['meta'] is Map ? Map<String, dynamic>.from(json['meta'] as Map) : <String, dynamic>{});
       total = meta['total'] as int? ?? list.length;
       pageNum = meta['page'] as int? ?? page;
       totalPages = meta['totalPages'] as int? ?? 1;
@@ -60,7 +69,7 @@ class PatientsRepository {
     if (response.statusCode != 200 || json['success'] != true) {
       throw Exception(json['message'] ?? 'Duplicate check failed');
     }
-    return json['data'] as Map<String, dynamic>;
+    return json['data'] is Map ? Map<String, dynamic>.from(json['data'] as Map) : <String, dynamic>{};
   }
 
   Future<Patient> createPatient(Map<String, dynamic> data) async {
@@ -71,7 +80,8 @@ class PatientsRepository {
       final text = msg is List ? msg.join(', ') : (msg?.toString() ?? 'Failed to register patient');
       throw Exception(text);
     }
-    return Patient.fromJson(json['data'] as Map<String, dynamic>);
+    final patientMap = json['data'] is Map ? Map<String, dynamic>.from(json['data'] as Map) : <String, dynamic>{};
+    return Patient.fromJson(patientMap);
   }
 
   Future<Map<String, dynamic>> getDossier(String id) async {
@@ -80,6 +90,6 @@ class PatientsRepository {
     if (response.statusCode != 200 || json['success'] != true) {
       throw Exception(json['message'] ?? 'Failed to fetch patient dossier');
     }
-    return json['data'] as Map<String, dynamic>;
+    return json['data'] is Map ? Map<String, dynamic>.from(json['data'] as Map) : <String, dynamic>{};
   }
 }

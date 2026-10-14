@@ -50,7 +50,7 @@ class Patient {
           : null;
 
   factory Patient.fromJson(Map<String, dynamic> json) {
-    final count = json['_count'] as Map<String, dynamic>?;
+    final count = json['_count'] is Map ? Map<String, dynamic>.from(json['_count'] as Map) : null;
     return Patient(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? '',

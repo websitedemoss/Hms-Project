@@ -11,7 +11,10 @@ class DoctorsRepository {
     }
 
     final list = json['data'] as List<dynamic>? ?? [];
-    return list.map((e) => Doctor.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .whereType<Map>()
+        .map((e) => Doctor.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
   Future<Map<String, dynamic>> fetchAvailableSlots(String doctorId, String date) async {
@@ -21,9 +24,12 @@ class DoctorsRepository {
       throw Exception(json['message'] ?? 'Failed to fetch slots');
     }
 
-    final data = json['data'] as Map<String, dynamic>;
+    final data = json['data'] is Map ? Map<String, dynamic>.from(json['data'] as Map) : <String, dynamic>{};
     final rawSlots = data['slots'] as List<dynamic>? ?? [];
-    final slots = rawSlots.map((e) => DoctorSlotItem.fromJson(e as Map<String, dynamic>)).toList();
+    final slots = rawSlots
+        .whereType<Map>()
+        .map((e) => DoctorSlotItem.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
 
     return {
       'date': data['date'] as String? ?? date,

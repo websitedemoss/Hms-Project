@@ -128,8 +128,8 @@ class PatientDossierModal extends ConsumerWidget {
                                 : ListView.builder(
                                     itemCount: appointments.length,
                                     itemBuilder: (context, idx) {
-                                      final appt = appointments[idx] as Map<String, dynamic>;
-                                      final doc = appt['doctor'] as Map<String, dynamic>?;
+                                      final appt = appointments[idx] is Map ? Map<String, dynamic>.from(appointments[idx] as Map) : <String, dynamic>{};
+                                      final doc = appt['doctor'] is Map ? Map<String, dynamic>.from(appt['doctor'] as Map) : null;
                                       final diagnoses = appt['diagnoses'] as List<dynamic>? ?? [];
                                       final prescriptions = appt['prescriptions'] as List<dynamic>? ?? [];
 
@@ -258,7 +258,7 @@ class PatientDossierModal extends ConsumerWidget {
                                 : ListView.builder(
                                     itemCount: timeline.length,
                                     itemBuilder: (context, idx) {
-                                      final item = timeline[idx] as Map<String, dynamic>;
+                                      final item = timeline[idx] is Map ? Map<String, dynamic>.from(timeline[idx] as Map) : <String, dynamic>{};
                                       final eventType = item['eventType'] as String? ?? 'Event';
                                       final desc = item['description'] as String? ?? '';
                                       final createdAt = item['createdAt'] as String? ?? '';

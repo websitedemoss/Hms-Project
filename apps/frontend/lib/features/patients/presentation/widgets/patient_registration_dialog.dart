@@ -78,10 +78,10 @@ class _PatientRegistrationDialogState extends ConsumerState<PatientRegistrationD
       final hasMatch = res['hasMatch'] as bool? ?? false;
       if (hasMatch) {
         final matches = res['matches'] as List<dynamic>? ?? [];
-        if (matches.isNotEmpty) {
-          final m = matches.first as Map<String, dynamic>;
+        if (matches.isNotEmpty && matches.first is Map) {
+          final m = Map<String, dynamic>.from(matches.first as Map);
           setState(() {
-            _duplicateWarning = 'Possible duplicate: ${m['mrn']} ${m['firstName']} ${m['lastName']} (${m['phone'] ?? 'No phone'})';
+            _duplicateWarning = 'Possible duplicate: ${m['mrn'] ?? m['id'] ?? ''} ${m['name'] ?? m['firstName'] ?? ''} ${m['surname'] ?? m['lastName'] ?? ''} (${m['phone'] ?? 'No phone'})';
           });
         }
       } else {

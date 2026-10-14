@@ -11,7 +11,7 @@ class DashboardRepository {
       throw Exception(json['message'] ?? 'Failed to load dashboard overview');
     }
 
-    final data = json['data'] as Map<String, dynamic>;
+    final data = json['data'] is Map ? Map<String, dynamic>.from(json['data'] as Map) : <String, dynamic>{};
     return DashboardOverview.fromJson(data);
   }
 }
