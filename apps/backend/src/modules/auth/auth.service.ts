@@ -44,9 +44,11 @@ export class AuthService {
   async login(dto: LoginDto) {
     const username = dto.username.trim();
 
-    // 1. Lookup staff member by username
+    // 1. Lookup staff member by username (case-insensitive)
     const staff = await this.prisma.staff.findFirst({
-      where: { username },
+      where: {
+        username: { equals: username, mode: 'insensitive' },
+      },
       include: {
         hospital: {
           select: {
